@@ -82,7 +82,6 @@ static int counting(gpio_evt_msg *message)
     static RTC_DATA_ATTR uint32_t history = 0;
     static int64_t last_time = 0;
     static const float expire_th_s = 1;
-    printf("current state %d\n", state);
     if ((state == 0) && ((message->timestamp_10us - last_time) > (expire_th_s * S_TO_US_FACTOR / 10)))
     {
         printf("old state expires, clear history\n");
