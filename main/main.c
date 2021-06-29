@@ -17,30 +17,15 @@
 #include <sys/time.h>
 
 #include "deep_sleep.h"
-
 #include "ulp_main.h"
 #include "ulp_wake.h"
-#include "network_common.h"
-#include "sntpController.h"
-#include "display.h"
+
 
 static int counting(gpio_evt_msg *message);
 static void gpio_task();
 static void send_task();
 static void ulp_isr(void *arg);
-static void realtime_now(int64_t *timestamp_ms);
 
-struct CountValue
-{
-    int64_t timestamp_ms;
-    int count;
-};
-enum
-{
-    COUNT_DATA_N_MAX = 20
-};
-static RTC_DATA_ATTR int count_data_n = 0;
-static RTC_DATA_ATTR struct CountValue count_data[COUNT_DATA_N_MAX];
 static RTC_NOINIT_ATTR int count;
 
 static const char *TAG = "main";
@@ -63,10 +48,14 @@ static void gpio_task()
     }
 }
 
+/** following is a sample application 
+ * the two pins are connected to two sensor of a light barrier doorway tunstile
+ * when the light barrier is triggered it will output high signal
+ * we could count the number of people in the room relatively 
+*/
 static int counting(gpio_evt_msg *message)
 {
-    //TODO: intergrate your cornercase handler
-    //following is a sample code:
+    
     static int8_t transition_table[][4] = {
         //event: pin1-fall pin1-rise pin2-fall pin2-rise
         {-1, 1, -1, 2},  //state 0: neither high
@@ -120,12 +109,6 @@ static int counting(gpio_evt_msg *message)
     return 0;
 }
 
-static void realtime_now(int64_t *timestamp_ms)
-{
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    *timestamp_ms = (now.tv_sec * (int64_t)1000) + (now.tv_usec / 1000);
-}
 
 static void ulp_isr(void *arg)
 {
@@ -151,9 +134,6 @@ void app_main(void)
     {
         printf("reset count to zero\n");
         count = 0;
-        /*start_wifi();
-        initializeSntp();
-        obtainTime();*/
         init_ulp_program();
     }
     sema = xSemaphoreCreateBinary();
@@ -168,12 +148,4 @@ void app_main(void)
     REG_SET_BIT(RTC_CNTL_INT_ENA_REG, RTC_CNTL_ULP_CP_INT_ENA_M);
 
     create_sleep_timer();
-    initDisplay();
-    char text[20];
-    while (1)
-    {
-        sprintf(text, "count %d", count);
-        displayText(text);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }
